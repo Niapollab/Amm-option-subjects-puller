@@ -21,7 +21,7 @@ async def build_report(cached_session: MoodleCachedSession, course_id: str | int
             if not isinstance(section, ChoiceMoodleSection):
                 continue
 
-            report = await session.get_text_report(section.id)
+            report = await session.get_excel_report(section.id)
             report = deserialize_report(report)
 
             filename = path.join(output_directory, f'{course.name}.xsls')

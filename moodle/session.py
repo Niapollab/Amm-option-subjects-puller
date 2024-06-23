@@ -2,6 +2,7 @@ from moodle.auth import MoodleCachedSession
 from moodle.constants import MOODLE_BASE_ADDRESS
 from moodle.models import MoodleCourse
 from typing import Self
+import pandas as pd
 
 
 class MoodleSession:
@@ -41,14 +42,14 @@ class MoodleSession:
 
         ...
 
-    async def get_text_report(self, report_id: str | int) -> str:
-        '''Retrieve a text report from Moodle.
+    async def get_excel_report(self, report_id: str | int) -> pd.DataFrame:
+        '''Retrieve a Excel report from Moodle.
 
         Args:
-            report_id (str | int): The report ID or a URL string containing the report ID.
+            report_id (str | int): The ID or URL of the report to be retrieved.
 
         Returns:
-            str: The content of the text report.
+            pd.DataFrame: A DataFrame containing the report data formatted for Excel.
         '''
 
         # TODO: Convert report URL (if provided as a string) to an ID
