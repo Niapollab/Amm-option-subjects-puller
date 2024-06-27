@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Mapping
+from typing import Mapping, Sequence
 import re
 
 
@@ -93,5 +93,5 @@ class Student:
 class Report:
     '''Class to represent a report, which maps group numbers to students.'''
 
-    groups: Mapping[int, Student]
+    groups: Mapping[int, Sequence[Student]]
     '''A mapping of group numbers to Student instances.'''
