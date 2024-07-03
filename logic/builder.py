@@ -25,7 +25,7 @@ async def build_report(cached_session: MoodleCachedSession, course_id: str | int
                 report = await session.get_excel_report(activity.id)
                 report = deserialize_report(report)
 
-                filename = f'{course.name}-{section.name}-{activity.name}.xsls'
+                filename = f'{course.name}-{section.name}-{activity.name}.xlsx'
                 filename = path.join(output_directory, filename)
 
                 serialize_report_to_excel(filename, report)
