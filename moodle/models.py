@@ -3,6 +3,24 @@ from typing import Sequence
 
 
 @dataclass(frozen=True)
+class MoodleActivity:
+    '''Class to represent a section in a Moodle section.'''
+
+    id: int
+    '''The unique identifier for the Moodle activity.'''
+
+    name: str
+    '''The name or title of the Moodle activity.'''
+
+
+@dataclass(frozen=True)
+class ChoiceMoodleActivity(MoodleActivity):
+    '''Class to represent a choice Moodle activity.'''
+
+    pass
+
+
+@dataclass(frozen=True)
 class MoodleSection:
     '''Class to represent a section in a Moodle course.'''
 
@@ -12,11 +30,8 @@ class MoodleSection:
     name: str
     '''The name or title of the Moodle section.'''
 
-
-@dataclass(frozen=True)
-class ChoiceMoodleSection(MoodleSection):
-    '''Class to represent a choice Moodle section.'''
-    pass
+    activities: Sequence[MoodleActivity]
+    '''A sequence of MoodleActivity objects representing the activities within the section.'''
 
 
 @dataclass(frozen=True)

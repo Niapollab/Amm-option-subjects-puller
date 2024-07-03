@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from moodle.constants import MOODLE_BASE_ADDRESS
+from moodle.constants import MOODLE_BASE_ADDRESS, MOODLE_SESSION_COOKIE_NAME
 from moodle.exceptions import (
     CorruptedSessionError,
     OpeningSessionFileError,
@@ -76,7 +76,7 @@ async def authorize(credentials: MoodleCredentials) -> MoodleCachedSession:
         cached_session = MoodleCachedSession(
             credentials.login,
             _get_api_token_key(text),
-            auth_response.history[0].cookies["MoodleSession"].value,
+            auth_response.history[0].cookies[MOODLE_SESSION_COOKIE_NAME].value,
         )
 
         return cached_session

@@ -1,6 +1,6 @@
 from logic.serialization import deserialize_report, serialize_report_to_excel
 from moodle.auth import MoodleCachedSession
-from moodle.models import ChoiceMoodleSection
+from moodle.models import ChoiceMoodleActivity
 from moodle.session import MoodleSession
 from os import path
 
@@ -18,11 +18,14 @@ async def build_report(cached_session: MoodleCachedSession, course_id: str | int
         course = await session.get_course(course_id)
 
         for section in course.sections:
-            if not isinstance(section, ChoiceMoodleSection):
-                continue
+            for activity in section.activities:
+                if not isinstance(activity, ChoiceMoodleActivity):
+                    continue
 
-            report = await session.get_excel_report(section.id)
-            report = deserialize_report(report)
+                report = await session.get_excel_report(activity.id)
+                report = deserialize_report(report)
 
-            filename = path.join(output_directory, f'{course.name}.xsls')
-            serialize_report_to_excel(filename, report)
+                filename = f'{course.name}-{section.name}-{activity.name}.xsls'
+                filename = path.join(output_directory, filename)
+
+                serialize_report_to_excel(filename, report)
