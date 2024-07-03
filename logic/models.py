@@ -10,6 +10,9 @@ _IDENTIFICATOR_PATTERN = re.compile(r"_?([^_]*)")
 _CURRENT_YEAR_BASE = date.today().year // 100 * 100
 """Calculate the current century base (e.g., 2000 for the year 2023)."""
 
+_NON_DIGITS_PATTERN = re.compile(r"[^\d]")
+"""Regex pattern to extract non-digits from the string."""
+
 
 @dataclass(frozen=True)
 class Direction:
@@ -49,7 +52,7 @@ class Identificator:
     profile: str
     """The specific profile or specialization within the direction."""
 
-    group: int
+    group: str
     """The group number of the student."""
 
     start_year: int
@@ -83,10 +86,11 @@ class Identificator:
             current_year,
             *_,
         ) = _IDENTIFICATOR_PATTERN.findall(value.strip())
-        direction = Direction.from_str(f"{direction_code}_{direction_name}")
 
-        group = int(group)
+        direction = Direction.from_str(f"{direction_code}_{direction_name}")
         start_year = _CURRENT_YEAR_BASE + int(start_year)
+
+        current_year = _NON_DIGITS_PATTERN.sub("", current_year)
         current_year = int(current_year)
 
         return Identificator(
