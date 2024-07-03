@@ -21,3 +21,8 @@ class SavingSessionFileError(Exception):
 class CorruptedSessionError(Exception):
     def __init__(self, message) -> None:
         super().__init__(message)
+
+
+class CorruptedHtmlError(Exception):
+    def __init__(self, message) -> None:
+        super().__init__(message)
