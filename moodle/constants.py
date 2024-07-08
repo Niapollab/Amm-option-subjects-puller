@@ -10,5 +10,8 @@ MOODLE_COURSE_VIEW_PATH = "/course"
 MOODLE_CHOICE_ACTIVITY_PATH = "/mod/choice"
 """Path to the choice activity module in Moodle."""
 
+MOODLE_QUIZ_ACTIVITY_PATH = "/mod/quiz"
+"""Path to the quiz activity module in Moodle."""
+
 MOODLE_SESSION_COOKIE_NAME = "MoodleSession"
 """Constant defining the name of the Moodle session cookie. """

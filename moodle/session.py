@@ -6,16 +6,21 @@ from moodle.constants import (
     MOODLE_CHOICE_ACTIVITY_PATH,
     MOODLE_COURSE_VIEW_PATH,
     MOODLE_MAIN_PAGE_PATH,
+    MOODLE_QUIZ_ACTIVITY_PATH,
     MOODLE_SESSION_COOKIE_NAME,
 )
 from moodle.html_parse_utils import HtmlTag, enumerate_tag_by_name
+from moodle.progress import ProgressHandler, ProgressHandlerFactory
 from moodle.models import (
     ChoiceMoodleActivity,
     MoodleActivity,
+    MoodleAttemptStatus,
     MoodleCourse,
+    MoodleQuizAttempt,
     MoodleSection,
+    QuizMoodleActivity,
 )
-from typing import Self, Sequence
+from typing import AsyncIterable, Self, Sequence
 import pandas as pd
 import re
 
@@ -112,6 +117,80 @@ class MoodleSession:
 
         return pd.read_excel(BytesIO(report_xsls_bytes))
 
+    async def get_quiz_attempts(
+        self,
+        quiz_id: str | int,
+        query: MoodleAttemptStatus | None = None,
+        progress_factory: ProgressHandlerFactory[int] | None = None,
+        page_size: int = 30,
+    ) -> AsyncIterable[Sequence[MoodleQuizAttempt]]:
+        """Retrieve quiz attempts for a given quiz ID, optionally filtered by status.
+
+        Args:
+            quiz_id (str | int): The ID or URL of the quiz.
+            query (MoodleAttemptStatus, optional): The status filter for the quiz attempts. Defaults to FINISHED.
+            progress_factory (ProgressHandlerFactory[int], optional): Factory to create a progress handler to track the progress of fetching attempts. Defaults to None.
+            page_size (int, optional): The number of attempts to fetch per page. Defaults to 30.
+
+        Yields:
+            AsyncIterable[Sequence[MoodleQuizAttempt]]: An asynchronous iterable of sequences of MoodleQuizAttempt.
+        """
+
+        query = query or MoodleAttemptStatus.FINISHED
+        progress_factory = progress_factory or ProgressHandler.mock
+
+        if isinstance(quiz_id, str):
+            quiz_id = MoodleSession.__get_id_from_url(quiz_id)
+        quiz_url = f"{MOODLE_QUIZ_ACTIVITY_PATH}/report.php"
+
+        page = 0
+        uploaded_count = 0
+
+        while True:
+            data = {
+                "id": quiz_id,
+                "mode": "overview",
+                "attempts": "enrolled_with",
+                "stateinprogress": int(query == MoodleAttemptStatus.IN_PROGRESS),
+                "stateoverdue": int(query == MoodleAttemptStatus.OVERDUE),
+                "statefinished": int(query == MoodleAttemptStatus.FINISHED),
+                "statebandoned": int(query == MoodleAttemptStatus.BANDONED),
+                "onlygraded": int(query == MoodleAttemptStatus.ONLY_BEST_GRADED),
+                "onlyregraded": int(query == MoodleAttemptStatus.ONLY_REGRADED),
+                "pagesize": page_size,
+                "slotmarks": 0,
+                "page": page,
+                "sesskey": self._session_key,
+            }
+
+            try:
+                async with self._client.post(quiz_url, data=data) as response:
+                    attempts_page_html = await response.text()
+            except Exception:
+                raise ConnectionError(
+                    f'Unable to connect to the endpoint "{MOODLE_BASE_ADDRESS}{quiz_url}". Check the internet connection.'
+                )
+
+            if page == 0:
+                attempts_count: int = MoodleSession.__get_attempts_count(
+                    attempts_page_html
+                )
+                progress = progress_factory(attempts_count)
+
+            current_page_size = min(page_size, attempts_count - uploaded_count)
+            attempts = MoodleSession.__parse_attempts_page(
+                attempts_page_html, current_page_size
+            )
+
+            uploaded_count += len(attempts)
+            page += 1
+
+            progress.update(uploaded_count)
+            yield attempts
+
+            if uploaded_count >= attempts_count:
+                break
+
     async def close(self) -> None:
         """Close the current Moodle session."""
 
@@ -138,8 +217,8 @@ class MoodleSession:
         return await self.close()
 
     @staticmethod
-    def __get_id_from_url(url: str) -> int:
-        match = re.search(r"id=(\d+)", url)
+    def __get_id_from_url(url: str, param_name: str = "id") -> int:
+        match = re.search(rf"{param_name}=(\d+)", url)
         if not match:
             raise ValueError("Unable to get course identifier.")
 
@@ -221,4 +300,75 @@ class MoodleSession:
                 if MOODLE_CHOICE_ACTIVITY_PATH in inner_tag.attributes["href"]:
                     return ChoiceMoodleActivity(id, name)
 
+                if MOODLE_QUIZ_ACTIVITY_PATH in inner_tag.attributes["href"]:
+                    return QuizMoodleActivity(id, name)
+
         return MoodleActivity(id, name)
+
+    @staticmethod
+    def __get_attempts_count(attempts_page_html: str) -> int:
+        for tag in enumerate_tag_by_name(attempts_page_html, "div"):
+            if (
+                "class" in tag.attributes
+                and "quizattemptcounts" in tag.attributes["class"]
+            ):
+                return int(re.sub(r"\D", "", tag.inner_text or ""))
+
+        raise ValueError("Unable to find attempts count.")
+
+    @staticmethod
+    def __parse_attempts_page(
+        attempts_page_html: str, page_size: int
+    ) -> Sequence[MoodleQuizAttempt]:
+        attempts = []
+
+        for index, tag in enumerate(enumerate_tag_by_name(attempts_page_html, "tr")):
+            if index > page_size:
+                break
+
+            if (
+                "id" in tag.attributes
+                and "mod-quiz-report-overview" in tag.attributes["id"]
+            ):
+                attempts.append(MoodleSession.__parse_attempt(tag))
+
+        return attempts
+
+    @staticmethod
+    def __parse_attempt(attempt_tag: HtmlTag) -> MoodleQuizAttempt:
+        tags = iter(attempt_tag.enumerate_tag_by_name("td"))
+
+        # Skip checkbox column
+        _ = next(tags)
+
+        student_info_tag = next(tags)
+        finished = (
+            "class" in attempt_tag.attributes
+            and "gradedattempt" in attempt_tag.attributes["class"]
+        )
+
+        login = next(tags).inner_text
+        if not login:
+            raise ValueError("Unable to parse login in attempt info.")
+
+        email = next(tags).inner_text
+        if not email:
+            raise ValueError("Unable to parse email in attempt info.")
+
+        fullname_tag, id_tag = student_info_tag.enumerate_tag_by_name("a")
+        fullname = fullname_tag.inner_text
+        if not fullname:
+            raise ValueError("Unable to parse fullname in attempt info.")
+
+        url = (
+            id_tag.attributes["href"]
+            if "href" in id_tag.attributes
+            and MOODLE_QUIZ_ACTIVITY_PATH in id_tag.attributes["href"]
+            else None
+        )
+        if not url:
+            raise ValueError("Unable to parse id in attempt info.")
+
+        id = MoodleSession.__get_id_from_url(url, "attempt")
+
+        return MoodleQuizAttempt(id, fullname, login, email, finished)
