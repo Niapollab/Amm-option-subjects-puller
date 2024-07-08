@@ -220,7 +220,7 @@ class MainForm:
 
             try:
                 await build_report(
-                    self._cached_session, course_id, self._directory.get()
+                    self._cached_session, course_id, None, self._directory.get()
                 )
 
                 show_information(self._ctk, "Отчет успешно загружен.")

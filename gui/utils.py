@@ -31,7 +31,7 @@ class DisabledContext:
 
         return self
 
-    def __exit__(self, *_) -> Any:
+    def __exit__(self, *_) -> None:
         """Exit the context and restore the previous states of the widgets.
 
         Args:

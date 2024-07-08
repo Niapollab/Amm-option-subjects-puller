@@ -85,7 +85,7 @@ class CLI:
     async def __build_report(self, cached_session: MoodleCachedSession) -> None:
         try:
             await build_report(
-                cached_session, self.__args.course_url, self.__args.output
+                cached_session, self.__args.course_url, None, self.__args.output
             )
         except Exception:
             print(

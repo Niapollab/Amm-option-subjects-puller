@@ -1,31 +1,51 @@
 from logic.serialization import deserialize_report, serialize_report_to_excel
 from moodle.auth import MoodleCachedSession
 from moodle.models import ChoiceMoodleActivity
+from moodle.progress import ProgressHandler, ProgressHandlerFactory
 from moodle.session import MoodleSession
 from os import path
 
 
-async def build_report(cached_session: MoodleCachedSession, course_id: str | int, output_directory: str = '.') -> None:
-    '''Generate a report for a specific Moodle course and save it as an Excel file.
+async def build_report(
+    cached_session: MoodleCachedSession,
+    course_id: str | int,
+    progress_factory: ProgressHandlerFactory[int] | None = None,
+    output_directory: str = ".",
+) -> None:
+    """Generate a report for a specific Moodle course and save it as an Excel file.
 
     Args:
         cached_session (MoodleCachedSession): The cached Moodle session used to authenticate.
         course_id (str | int): The ID or URL of the course to generate the report for.
+        progress_factory (ProgressHandlerFactory[int], optional): progress_factory (ProgressHandlerFactory[int], optional): A factory to create a progress handler to track the report generation progress. Defaults to None.
         output_directory (str, optional): The directory where the report will be saved. Defaults to the current directory.
-    '''
+    """
 
     async with MoodleSession(cached_session) as session:
         course = await session.get_course(course_id)
+        activities_count = sum(
+            1
+            for section in course.sections
+            for activity in section.activities
+            if isinstance(activity, ChoiceMoodleActivity)
+        )
 
-        for section in course.sections:
-            for activity in section.activities:
-                if not isinstance(activity, ChoiceMoodleActivity):
-                    continue
+        progress_factory = progress_factory or ProgressHandler.mock
+        count = 0
 
-                report = await session.get_excel_report(activity.id)
-                report = deserialize_report(report)
+        with progress_factory(activities_count) as progress:
+            for section in course.sections:
+                for activity in section.activities:
+                    if not isinstance(activity, ChoiceMoodleActivity):
+                        continue
 
-                filename = f'{course.name}-{section.name}-{activity.name}.xlsx'
-                filename = path.join(output_directory, filename)
+                    report = await session.get_excel_report(activity.id)
+                    report = deserialize_report(report)
 
-                serialize_report_to_excel(filename, report)
+                    filename = f"{course.name}-{section.name}-{activity.name}.xlsx"
+                    filename = path.join(output_directory, filename)
+
+                    serialize_report_to_excel(filename, report)
+
+                    count += 1
+                    progress.update(count)
