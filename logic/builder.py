@@ -1,8 +1,9 @@
 from logic.serialization import deserialize_report, serialize_report_to_excel
 from moodle.auth import MoodleCachedSession
 from moodle.models import ChoiceMoodleActivity
-from moodle.progress import ProgressHandler, ProgressHandlerFactory
+from moodle.progress import ProgressHandler, ProgressHandlerFactory, Bar
 from moodle.session import MoodleSession
+from customtkinter import CTk
 from os import path
 
 
@@ -11,6 +12,8 @@ async def build_report(
     course_id: str | int,
     progress_factory: ProgressHandlerFactory[int] | None = None,
     output_directory: str = ".",
+    root: CTk | None = None
+
 ) -> None:
     """Generate a report for a specific Moodle course and save it as an Excel file.
 
@@ -29,23 +32,19 @@ async def build_report(
             for activity in section.activities
             if isinstance(activity, ChoiceMoodleActivity)
         )
-
         progress_factory = progress_factory or ProgressHandler.mock
         count = 0
-
-        with progress_factory(activities_count) as progress:
+        with progress_factory(Bar, activities_count) as progress:
+            progress.prepare_bar(root)
             for section in course.sections:
                 for activity in section.activities:
                     if not isinstance(activity, ChoiceMoodleActivity):
                         continue
-
                     report = await session.get_excel_report(activity.id)
                     report = deserialize_report(report)
-
                     filename = f"{course.name}-{section.name}-{activity.name}.xlsx"
                     filename = path.join(output_directory, filename)
 
                     serialize_report_to_excel(filename, report)
-
-                    count += 1
+                    count+=1
                     progress.update(count)

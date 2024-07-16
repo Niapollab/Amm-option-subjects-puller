@@ -11,6 +11,7 @@ from customtkinter import (
     filedialog,
 )
 from CTkMessagebox import CTkMessagebox
+from gui.GUIProgressHandler import GUIProgressHandler
 from gui.constants import FORM_SIZES, SCALE_FACTOR
 from gui.utils import DisabledContext
 from logic.builder import build_report
@@ -24,7 +25,6 @@ from moodle.auth import (
 )
 from moodle.session import MoodleSession
 import os
-
 
 class LoginDialog:
     """Dialog for user login to Moodle."""
@@ -220,11 +220,11 @@ class MainForm:
 
             try:
                 await build_report(
-                    self._cached_session, course_id, None, self._directory.get()
+                    self._cached_session, course_id, GUIProgressHandler[0], self._directory.get(), self._ctk
                 )
 
                 show_information(self._ctk, "Отчет успешно загружен.")
-            except Exception:
+            except Exception as e:
                 show_error(
                     self._ctk,
                     "Произошла непредвиденная ошибка. Повторите попытку позднее.",
