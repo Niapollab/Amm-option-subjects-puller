@@ -1,4 +1,4 @@
-from typing import Any, Self, Sequence
+from typing import Self, Sequence
 from customtkinter import CTkBaseClass
 
 

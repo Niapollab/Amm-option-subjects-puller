@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from logic import build_report
 from pathlib import Path
-from cli.CLIProgressHandler import CLIProgressHandler
+from cli.progress import TDQMProgressHandler
 import os
 from moodle.auth import (
     restore_session,
@@ -22,20 +22,20 @@ from getpass import getpass
 
 
 class CLI:
-    '''Command Line Interface (CLI) for managing Moodle sessions and generating reports.'''
+    """Command Line Interface (CLI) for managing Moodle sessions and generating reports."""
 
     def __init__(self, args: Namespace) -> None:
-        '''Initialize the CLI with command-line arguments.'''
+        """Initialize the CLI with command-line arguments."""
 
         self.__args = args
 
     async def run_cli(self) -> None:
-        '''Run the CLI process to handle session management and report generation.
+        """Run the CLI process to handle session management and report generation.
 
         This method tries to restore a cached session from the session file. If the session file is missing
         or corrupted, it prompts the user to sign in and then builds the report. If the session is valid, it
         directly builds the report.
-        '''
+        """
 
         try:
             cached_session = await restore_session(SESSION_FILE)
@@ -86,11 +86,14 @@ class CLI:
     async def __build_report(self, cached_session: MoodleCachedSession) -> None:
         try:
             await build_report(
-                cached_session, self.__args.course_url, CLIProgressHandler[0], self.__args.output
+                cached_session,
+                self.__args.course_url,
+                lambda size: TDQMProgressHandler(size),
+                self.__args.output,
             )
-        except Exception:
+        except Exception as e:
             print(
-                "При создании отчёта произошла непредвиденная ошибка. Повторите попытку позднее."
+                f"При создании отчёта произошла непредвиденная ошибка. {str(e)} Повторите попытку позднее."
             )
         else:
             print("Отчет успешно загружен.")
@@ -123,11 +126,11 @@ class CLI:
 
 
 def parse_arguments() -> Namespace:
-    '''Parse command-line arguments for the CLI application.
+    """Parse command-line arguments for the CLI application.
 
     Returns:
         Namespace: Parsed command-line arguments.
-    '''
+    """
 
     arg_parser = ArgumentParser(
         prog="Amm-option-subjects-puller",
