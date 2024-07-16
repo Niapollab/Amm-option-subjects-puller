@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from logic import build_report
 from pathlib import Path
+from cli.CLIProgressHandler import CLIProgressHandler
 import os
 from moodle.auth import (
     restore_session,
@@ -85,7 +86,7 @@ class CLI:
     async def __build_report(self, cached_session: MoodleCachedSession) -> None:
         try:
             await build_report(
-                cached_session, self.__args.course_url, None, self.__args.output
+                cached_session, self.__args.course_url, CLIProgressHandler[0], self.__args.output
             )
         except Exception:
             print(
