@@ -4,6 +4,7 @@ from moodle.models import ChoiceMoodleActivity
 from moodle.progress import ProgressHandler, ProgressHandlerFactory
 from moodle.session import MoodleSession
 from os import path
+import asyncio
 
 
 async def build_report(
@@ -23,28 +24,38 @@ async def build_report(
 
     async with MoodleSession(cached_session) as session:
         course = await session.get_course(course_id)
-
         activities_count = sum(
             1
             for section in course.sections
             for activity in section.activities
             if isinstance(activity, ChoiceMoodleActivity)
         )
-        progress_factory = progress_factory or ProgressHandler.mock
 
+        report_tasks = []
+        for section in course.sections:
+            for activity in section.activities:
+                if not isinstance(activity, ChoiceMoodleActivity):
+                    continue
+
+                report_tasks.append(
+                    (
+                        course.name,
+                        section.name,
+                        activity.name,
+                        asyncio.create_task(session.get_excel_report(activity.id)),
+                    )
+                )
+
+        progress_factory = progress_factory or ProgressHandler.mock
         count = 0
         with progress_factory(activities_count) as progress:
-            for section in course.sections:
-                for activity in section.activities:
-                    if not isinstance(activity, ChoiceMoodleActivity):
-                        continue
+            for course_name, section_name, activity_name, task in report_tasks:
+                report = await task
+                report = deserialize_report(report)
 
-                    report = await session.get_excel_report(activity.id)
-                    report = deserialize_report(report)
+                filename = f"{course_name}-{section_name}-{activity_name}.xlsx"
+                filename = path.join(output_directory, filename)
 
-                    filename = f"{course.name}-{section.name}-{activity.name}.xlsx"
-                    filename = path.join(output_directory, filename)
-
-                    serialize_report_to_excel(filename, report)
-                    count += 1
-                    progress.update(count)
+                serialize_report_to_excel(filename, report)
+                count += 1
+                progress.update(count)
