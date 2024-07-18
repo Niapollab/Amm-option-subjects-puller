@@ -1,40 +1,7 @@
-from collections import defaultdict
-from typing import Any
-from logic.exceptions import (
-    DeserializeReportError,
-    InvalidColumnNameError,
-    SerializeReportError,
-)
-from logic.models import Report, Identificator, Student
+from typing import Any, Iterable
+from logic.exceptions import SerializeReportError
+from logic.models import Report, Student
 import pandas as pd
-
-
-def deserialize_report(df_report: pd.DataFrame) -> Report:
-    """Convert a DataFrame into a Report object.
-
-    Args:
-        df_report (pd.DataFrame): The DataFrame containing the report data.
-
-    Returns:
-        Report: A Report object with parsed student group numbers and student data.
-    """
-
-    try:
-        student_map = defaultdict(list)
-        for _, row in df_report.iterrows():
-            last_name = row["Фамилия"]
-            first_name = row["Имя"]
-            identificator = Identificator.from_str(row["Группа"])
-            group = identificator.group
-            choice = row["Вариант ответа"]
-            student = Student(f"{last_name} {first_name}", choice)
-            student_map[group].append(student)
-    except KeyError as e:
-        raise InvalidColumnNameError(f'Invalid dataframe column name "{e}".')
-    except Exception as e:
-        raise DeserializeReportError(f'Error of creating report "{e}".')
-
-    return Report(student_map)
 
 
 def serialize_report_to_excel(filename: str, report: Report) -> None:
@@ -47,20 +14,26 @@ def serialize_report_to_excel(filename: str, report: Report) -> None:
 
     with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
         try:
-            for group, students in report.groups.items():
-                df = pd.DataFrame(
-                    [
-                        {"ФИО": student.fullname, "Предмет": student.subject}
-                        for student in students
-                    ]
-                )
-                df = df.sort_values(by="ФИО")
-                df.to_excel(writer, sheet_name=str(group), index=False)
+            rows = __enumerate_df_rows(report.students)
+            df = pd.DataFrame(rows)
 
-                worksheet = writer.sheets[str(group)]
-                _auto_adjust_column_width(worksheet)
+            df = df.sort_values(by="ФИО")
+            df.to_excel(writer, index=False)
+
+            *_, worksheet = next(iter(writer.sheets.items()))
+            _auto_adjust_column_width(worksheet)
         except Exception as e:
             raise SerializeReportError(f'Error of creating report "{e}".')
+
+
+def __enumerate_df_rows(students: Iterable[Student]) -> Iterable[dict[str, Any]]:
+    for student in students:
+        priority = {
+            priority: index for index, priority in enumerate(student.priority, 1)
+        }
+
+        row = {"ФИО": student.fullname, "Договор": "", **priority, "Баллы": ""}
+        yield row
 
 
 def _auto_adjust_column_width(worksheet: Any) -> None:

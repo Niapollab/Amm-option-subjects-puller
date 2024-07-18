@@ -71,7 +71,7 @@ class MoodleSession:
         """
 
         if isinstance(course_id, str):
-            course_id = MoodleSession.__get_id_from_url(course_id)
+            course_id = MoodleSession._get_id_from_url(course_id)
 
         course_url = f"{MOODLE_COURSE_VIEW_PATH}/view.php?id={course_id}"
         try:
@@ -98,7 +98,7 @@ class MoodleSession:
         """
 
         if isinstance(report_id, str):
-            report_id = MoodleSession.__get_id_from_url(report_id)
+            report_id = MoodleSession._get_id_from_url(report_id)
 
         report_url = f"{MOODLE_CHOICE_ACTIVITY_PATH}/report.php"
         params = {
@@ -140,7 +140,7 @@ class MoodleSession:
         progress_factory = progress_factory or ProgressHandler.mock
 
         if isinstance(quiz_id, str):
-            quiz_id = MoodleSession.__get_id_from_url(quiz_id)
+            quiz_id = MoodleSession._get_id_from_url(quiz_id)
         quiz_url = f"{MOODLE_QUIZ_ACTIVITY_PATH}/report.php"
 
         page = 0
@@ -217,7 +217,7 @@ class MoodleSession:
         return await self.close()
 
     @staticmethod
-    def __get_id_from_url(url: str, param_name: str = "id") -> int:
+    def _get_id_from_url(url: str, param_name: str = "id") -> int:
         match = re.search(rf"{param_name}=(\d+)", url)
         if not match:
             raise ValueError("Unable to get course identifier.")
@@ -369,6 +369,6 @@ class MoodleSession:
         if not url:
             raise ValueError("Unable to parse id in attempt info.")
 
-        id = MoodleSession.__get_id_from_url(url, "attempt")
+        id = MoodleSession._get_id_from_url(url, "attempt")
 
         return MoodleQuizAttempt(id, fullname, login, email, finished)

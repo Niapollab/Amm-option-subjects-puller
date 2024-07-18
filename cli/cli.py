@@ -87,7 +87,7 @@ class CLI:
         try:
             await build_report(
                 cached_session,
-                self.__args.course_url,
+                self.__args.quiz_url,
                 lambda size: TDQMProgressHandler(size),
                 self.__args.output,
             )
@@ -139,7 +139,7 @@ def parse_arguments() -> Namespace:
     )
 
     arg_parser.add_argument(
-        "course_url",
+        "quiz_url",
         help="Ссылка на страницу курса в Moodle, содержащего данные опросов",
         type=str,
     )

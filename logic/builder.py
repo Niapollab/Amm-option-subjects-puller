@@ -1,15 +1,13 @@
-from logic.serialization import deserialize_report, serialize_report_to_excel
-from moodle.auth import MoodleCachedSession
-from moodle.models import ChoiceMoodleActivity
-from moodle.progress import ProgressHandler, ProgressHandlerFactory
-from moodle.session import MoodleSession
 from os import path
-import asyncio
+from logic.serialization import serialize_report_to_excel
+from moodle.auth import MoodleCachedSession
+from moodle.progress import ProgressHandlerFactory
+from logic.session import MoodleSession
 
 
 async def build_report(
     cached_session: MoodleCachedSession,
-    course_id: str | int,
+    quiz_id: str | int,
     progress_factory: ProgressHandlerFactory[int] | None = None,
     output_directory: str = ".",
 ) -> None:
@@ -23,39 +21,7 @@ async def build_report(
     """
 
     async with MoodleSession(cached_session) as session:
-        course = await session.get_course(course_id)
-        activities_count = sum(
-            1
-            for section in course.sections
-            for activity in section.activities
-            if isinstance(activity, ChoiceMoodleActivity)
-        )
+        report = await session.get_quiz_report(quiz_id, progress_factory)
+        filename = path.join(output_directory, "Отчет о приоритетах кафедр ПМИ.xlsx")
 
-        report_tasks = []
-        for section in course.sections:
-            for activity in section.activities:
-                if not isinstance(activity, ChoiceMoodleActivity):
-                    continue
-
-                report_tasks.append(
-                    (
-                        course.name,
-                        section.name,
-                        activity.name,
-                        asyncio.create_task(session.get_excel_report(activity.id)),
-                    )
-                )
-
-        progress_factory = progress_factory or ProgressHandler.mock
-        count = 0
-        with progress_factory(activities_count) as progress:
-            for course_name, section_name, activity_name, task in report_tasks:
-                report = await task
-                report = deserialize_report(report)
-
-                filename = f"{course_name}-{section_name}-{activity_name}.xlsx"
-                filename = path.join(output_directory, filename)
-
-                serialize_report_to_excel(filename, report)
-                count += 1
-                progress.update(count)
+        serialize_report_to_excel(filename, report)
