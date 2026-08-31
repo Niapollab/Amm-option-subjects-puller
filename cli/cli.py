@@ -1,24 +1,26 @@
-from argparse import ArgumentParser, Namespace
-from logic import build_report
-from pathlib import Path
-from cli.progress import TDQMProgressHandler
 import os
+from argparse import ArgumentParser, Namespace
+from contextlib import suppress
+from getpass import getpass
+from pathlib import Path
+
+from cli.progress import TDQMProgressHandler
+from logic import build_report
+from logic.constants import SESSION_FILE
 from moodle.auth import (
-    restore_session,
+    MoodleCachedSession,
     MoodleCredentials,
     authorize,
+    restore_session,
     serialize_session,
-    MoodleCachedSession,
 )
 from moodle.exceptions import (
-    OpeningSessionFileError,
     CorruptedSessionError,
-    SavingSessionFileError,
     IncorrectCredentialsError,
+    OpeningSessionFileError,
+    SavingSessionFileError,
 )
-from logic.constants import SESSION_FILE
 from moodle.session import MoodleSession
-from getpass import getpass
 
 
 class CLI:
@@ -46,10 +48,8 @@ class CLI:
         except CorruptedSessionError:
             print("Данные сессии испорчены.")
 
-            try:
+            with suppress(OSError):
                 os.remove(SESSION_FILE)
-            except Exception:
-                pass
 
             cached_session = await self.__sign_in()
             if cached_session:
@@ -93,7 +93,7 @@ class CLI:
             )
         except Exception as e:
             print(
-                f"При создании отчёта произошла непредвиденная ошибка. {str(e)} Повторите попытку позднее."
+                f"При создании отчёта произошла непредвиденная ошибка. {e!s} Повторите попытку позднее."
             )
         else:
             print("Отчет успешно загружен.")

@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Generic, Self, TypeVar
-
+from collections.abc import Callable
+from typing import Generic, Self, TypeVar
 
 T = TypeVar("T")
 
 
-class ProgressHandler(Generic[T], ABC):
+class ProgressHandler(ABC, Generic[T]):
     """Abstract base class for handling progress updates."""
 
     _state: T
@@ -24,26 +24,22 @@ class ProgressHandler(Generic[T], ABC):
             progress (T): The progress value to update.
         """
 
-        pass
-
     @abstractmethod
     def close(self) -> None:
         """Abstract method to close the progress handler."""
 
-        pass
-
     @staticmethod
-    def mock[G](init_state: G) -> "ProgressHandler[G]":
+    def mock(init_state: T) -> "ProgressHandler[T]":
         """Create a mock progress handler.
 
         Args:
-            init_state (G): The initial state for the mock progress handler.
+            init_state (T): The initial state for the mock progress handler.
 
         Returns:
-            ProgressHandler[G]: An instance of a mock progress handler.
+            ProgressHandler[T]: An instance of a mock progress handler.
         """
 
-        return _MockProgressHandler[G](init_state)
+        return _MockProgressHandler[T](init_state)
 
     def __enter__(self) -> Self:
         """Enter the runtime context related to this object.

@@ -1,7 +1,8 @@
-from moodle.progress import ProgressHandler
-from tqdm import tqdm
 from typing import TypeVar
 
+from tqdm import tqdm
+
+from moodle.progress import ProgressHandler
 
 T = TypeVar("T")
 
@@ -18,17 +19,17 @@ class TDQMProgressHandler(ProgressHandler[int]):
         super().__init__(0)
         self._bar = tqdm(total=size)
 
-    def update(self, new_value: int) -> None:
+    def update(self, progress: int) -> None:
         """Abstract method to update the progress.
 
         Args:
-            new_value (int): The progress value to update.
+            progress (int): The progress value to update.
         """
 
-        delta = max(0, new_value - self._state)
+        delta = max(0, progress - self._state)
         self._bar.update(delta)
 
-        self._state = new_value
+        self._state = progress
 
     def close(self) -> None:
         """Abstract method to close the progress handler."""

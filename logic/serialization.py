@@ -1,12 +1,14 @@
 from collections import defaultdict
 from typing import Any
+
+import pandas as pd
+
 from logic.exceptions import (
     DeserializeReportError,
     InvalidColumnNameError,
     SerializeReportError,
 )
-from logic.models import Report, Identificator, Student
-import pandas as pd
+from logic.models import Identificator, Report, Student
 
 
 def deserialize_report(df_report: pd.DataFrame) -> Report:
@@ -70,11 +72,9 @@ def _auto_adjust_column_width(worksheet: Any) -> None:
         column = col[0].column_letter
 
         for cell in col:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except Exception:
-                pass
+            if cell.value is not None:
+                cell_len = len(str(cell.value))
+                max_length = max(max_length, cell_len)
 
         adjusted_width = max_length + ADDITIONAL_SPACE
         worksheet.column_dimensions[column].width = adjusted_width

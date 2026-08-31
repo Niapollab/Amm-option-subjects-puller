@@ -1,6 +1,6 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Flag, auto
-from typing import Sequence
 
 
 @dataclass(frozen=True)
@@ -18,14 +18,10 @@ class MoodleActivity:
 class ChoiceMoodleActivity(MoodleActivity):
     """Class to represent a choice Moodle activity."""
 
-    pass
-
 
 @dataclass(frozen=True)
 class QuizMoodleActivity(MoodleActivity):
     """Class to represent a quiz Moodle activity."""
-
-    pass
 
 
 @dataclass(frozen=True)

@@ -1,8 +1,9 @@
-from collections import deque
-from dataclasses import dataclass
-from moodle.exceptions import CorruptedHtmlError
-from typing import Iterable, Mapping
 import re
+from collections import deque
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+
+from moodle.exceptions import CorruptedHtmlError
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,7 @@ def enumerate_tag_by_name(html: str, name: str) -> Iterable[HtmlTag]:
         CorruptedHtmlError: If an unpaired open or close tag is found.
     """
 
-    TAG_PATTERN = re.compile(rf"(?:<\/{name}>)|(?:<{name}(.*?)(\/)?>)", re.S)
+    TAG_PATTERN = re.compile(rf"(?:<\/{name}>)|(?:<{name}(.*?)(\/)?>)", re.DOTALL)
     tag_stack = deque()
 
     for tag in TAG_PATTERN.finditer(html):
@@ -84,5 +85,5 @@ def enumerate_tag_by_name(html: str, name: str) -> Iterable[HtmlTag]:
 
 
 def __parse_tag_attributes(raw_attributes: str) -> Mapping[str, str]:
-    ATTRIBUTE_PATTERN = re.compile(r'([^\s]*?)="(.*?)"', re.S)
+    ATTRIBUTE_PATTERN = re.compile(r'([^\s]*?)="(.*?)"', re.DOTALL)
     return {m[1]: m[2] for m in ATTRIBUTE_PATTERN.finditer(raw_attributes)}

@@ -1,5 +1,11 @@
+import re
+from collections.abc import AsyncIterable, Sequence
 from io import BytesIO
+from typing import Self
+
+import pandas as pd
 from aiohttp import ClientSession
+
 from moodle.auth import MoodleCachedSession
 from moodle.constants import (
     MOODLE_BASE_ADDRESS,
@@ -10,7 +16,6 @@ from moodle.constants import (
     MOODLE_SESSION_COOKIE_NAME,
 )
 from moodle.html_parse_utils import HtmlTag, enumerate_tag_by_name
-from moodle.progress import ProgressHandler, ProgressHandlerFactory
 from moodle.models import (
     ChoiceMoodleActivity,
     MoodleActivity,
@@ -20,9 +25,7 @@ from moodle.models import (
     MoodleSection,
     QuizMoodleActivity,
 )
-from typing import AsyncIterable, Self, Sequence
-import pandas as pd
-import re
+from moodle.progress import ProgressHandler, ProgressHandlerFactory
 
 
 class MoodleSession:

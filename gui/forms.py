@@ -1,18 +1,22 @@
+import os
 from asyncio import run
+from contextlib import suppress
 from typing import Any
+
+from CTkMessagebox import CTkMessagebox
 from customtkinter import (
     CTk,
-    CTkLabel,
-    CTkEntry,
-    CTkButton,
-    StringVar,
     CTkBaseClass,
+    CTkButton,
+    CTkEntry,
+    CTkLabel,
     CTkToplevel,
+    StringVar,
     filedialog,
 )
-from CTkMessagebox import CTkMessagebox
-from gui.progress import ProgressHandlerContext
+
 from gui.constants import FORM_SIZES, SCALE_FACTOR
+from gui.progress import ProgressHandlerContext
 from gui.utils import DisabledContext
 from logic.builder import build_report
 from logic.constants import SESSION_FILE
@@ -24,7 +28,6 @@ from moodle.auth import (
     serialize_session,
 )
 from moodle.session import MoodleSession
-import os
 
 
 class LoginDialog:
@@ -158,7 +161,6 @@ class MainForm:
         )
 
         output_entry = CTkEntry(ctk, state="readonly", textvariable=self._directory)
-        output_entry.insert
         output_entry.grid(
             row=3,
             column=0,
@@ -231,7 +233,7 @@ class MainForm:
             except Exception as e:
                 show_error(
                     self._ctk,
-                    f"Произошла непредвиденная ошибка. {str(e)} Повторите попытку позднее.",
+                    f"Произошла непредвиденная ошибка. {e!s} Повторите попытку позднее.",
                 )
 
         with DisabledContext(self._clickable):
@@ -239,7 +241,7 @@ class MainForm:
 
     def _init_session(self) -> None:
         async def _get_valid_cached_session(
-            login: str | None
+            login: str | None,
         ) -> MoodleCachedSession | None:
             while True:
                 credentials = LoginDialog(self._ctk, login).credentials
@@ -281,10 +283,8 @@ class MainForm:
                     )
 
                     # Remove expired session file
-                    try:
+                    with suppress(OSError):
                         os.remove(SESSION_FILE)
-                    except Exception:
-                        pass
 
                     # Session expired. Show the login page with previous login value.
                     self._cached_session = await _get_valid_cached_session(

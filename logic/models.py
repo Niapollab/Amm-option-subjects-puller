@@ -1,13 +1,12 @@
-from dataclasses import dataclass
-from datetime import date
-from typing import Mapping, Sequence
 import re
-
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 _IDENTIFICATOR_PATTERN = re.compile(r"_?([^_]*)")
 """Regex pattern to extract parts of the string separated by underscores."""
 
-_CURRENT_YEAR_BASE = date.today().year // 100 * 100
+_CURRENT_YEAR_BASE = datetime.now(tz=UTC).date().year // 100 * 100
 """Calculate the current century base (e.g., 2000 for the year 2023)."""
 
 _NON_DIGITS_PATTERN = re.compile(r"[^\d]")

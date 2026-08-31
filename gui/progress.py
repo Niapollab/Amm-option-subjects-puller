@@ -1,8 +1,9 @@
-from moodle.progress import ProgressHandler
 from typing import Any, TypeVar
-from customtkinter import CTkProgressBar
-from gui.constants import SCALE_FACTOR
 
+from customtkinter import CTkProgressBar
+
+from gui.constants import SCALE_FACTOR
+from moodle.progress import ProgressHandler
 
 T = TypeVar("T")
 
@@ -33,17 +34,17 @@ class ProgressHandlerContext(ProgressHandler[int]):
         )
         self._bar.set(self._state)
 
-    def update(self, new_value: int) -> None:
+    def update(self, progress: int) -> None:
         """Abstract method to update the progress.
 
         Args:
-            new_value (int): The progress value to update.
+            progress (int): The progress value to update.
         """
 
-        self._bar.set(new_value / self._size)
+        self._bar.set(progress / self._size)
         self._bar.update_idletasks()
 
-        self._state = new_value
+        self._state = progress
 
     def close(self) -> None:
         """Abstract method to close the progress handler."""

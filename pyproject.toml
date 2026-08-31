@@ -27,3 +27,13 @@ packages = ["cli", "gui", "logic", "moodle", "run_cli.py", "run_gui.py"]
 
 [tool.hatch.build.targets.sdist]
 only-include = ["cli", "gui", "logic", "moodle", "run_cli.py", "run_gui.py", "README.md"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.5",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "BLE001",  # Do not catch blind exception `Exception`
+]

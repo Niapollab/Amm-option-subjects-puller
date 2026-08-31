@@ -1,15 +1,17 @@
+import json
+import re
 from dataclasses import dataclass
+
+from aiofiles import open
+from aiohttp import ClientSession
+
 from moodle.constants import MOODLE_BASE_ADDRESS, MOODLE_SESSION_COOKIE_NAME
 from moodle.exceptions import (
     CorruptedSessionError,
-    OpeningSessionFileError,
     IncorrectCredentialsError,
+    OpeningSessionFileError,
     SavingSessionFileError,
 )
-from aiohttp import ClientSession
-from aiofiles import open
-import re
-import json
 
 
 @dataclass(frozen=True)

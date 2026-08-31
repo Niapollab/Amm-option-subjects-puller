@@ -1,10 +1,11 @@
+import asyncio
+from os import path
+
 from logic.serialization import deserialize_report, serialize_report_to_excel
 from moodle.auth import MoodleCachedSession
 from moodle.models import ChoiceMoodleActivity
 from moodle.progress import ProgressHandler, ProgressHandlerFactory
 from moodle.session import MoodleSession
-from os import path
-import asyncio
 
 
 async def build_report(
